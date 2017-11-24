@@ -3,11 +3,13 @@ rm(list = ls())
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Author: Luke Morrow
 #Date: November 11, 2017
-#Purpose: EDA for Adult Census Data
+#Purpose: Individual Data Science Project for Adult Census Data.
+#The goal is to predict if an individual makes >50k or <50k. 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(ggplot2)
 library(gridExtra)
 library(boot)
+library(glmnet)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Obtaining the data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,23 +111,41 @@ accuracy <- sum(diag(confusion.matrix)) / length(test$income)
 accuracy
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Improving the Model
+#Improving the Model using LASSO
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-m <- glm(income ~ poly(age, 3) + education.num + hours.per.week + workclass + marital.status + occupation + relationship + race + sex, family=binomial("logit"), data=train)
+#m <- glm(income ~ poly(age, 3) + education.num + hours.per.week + workclass + marital.status + occupation + relationship + race + sex, family=binomial("logit"), data=train)
+#Convert the data to a matrix to perform Lasso shrinkage technique
+x <- model.matrix(income~.,train) 
+y <- ifelse(train$income==" <=50K",0,1)
 
+cv.out <- cv.glmnet(x,y,alpha=1,family="binomial",type.measure = "mse" )
+
+plot(cv.out)
+
+lambdaMin <- cv.out$lambda.min
+
+lambda1se <- cv.out$lambda.1se
+
+coef(cv.out,s=lambda1se)
+ 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Model Validation
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Cross validation
-pred.probs <- predict(m, test, type="response")
-pred.income <- rep(" <=50K.", length(test$income))
-pred.income[pred.probs >= .5] <- " >50K."
+x_test<- model.matrix(income~.,test)
+#since the test data set does not have a native country Holand-Netherlands, we must add that column to the matrix so dimensions match
+holand <- rep(0, 16281)
+x_test <- cbind(x_test[,1:74], holand, x_test[,75:100])
 
-error.rate <- mean(pred.income != test$income)
+lasso.probs <- predict(cv.out, newx=x_test,s=lambda1se, type="response")
+lasso.income <- rep(" <=50K.", length(test$income))
+lasso.income[lasso.probs >= .5] <- " >50K."
+
+error.rate <- mean(lasso.income != test$income)
 error.rate
 
 #Confusion Matrix
-confusion.matrix <- table(test$income, pred.income)
+confusion.matrix <- table(test$income, lasso.income)
 print(addmargins(confusion.matrix))
 accuracy <- sum(diag(confusion.matrix)) / length(test$income)
 accuracy
