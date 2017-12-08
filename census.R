@@ -49,7 +49,8 @@ capGainPlot <- ggplot(train, aes(x=capital.gain)) + geom_histogram(aes(y=..count
 capLossPlot <- ggplot(train, aes(x=capital.loss)) + geom_histogram(aes(y=..count../sum(..count..)), color="darkblue", fill="lightblue") + ylab("percentage")
 hoursPlot <- ggplot(train, aes(x=hours.per.week)) + geom_histogram(aes(y=..count../sum(..count..)), color="darkblue", fill="lightblue") + ylab("percentage")
 
-grid.arrange(agePlot, wgtPlot, educationNumPlot, capGainPlot, capLossPlot, hoursPlot, ncol=2)
+grid.arrange(agePlot, wgtPlot, educationNumPlot, capGainPlot, capLossPlot, hoursPlot, ncol=2) 
+
 
 #Box plots of >50k <50k for continuous variables
 ageIncomePlot <- ggplot(train, aes(x=income, y=age)) + geom_boxplot(color="darkblue", fill="lightblue")
@@ -90,44 +91,32 @@ grid.arrange(workIncomePlot, maritalIncomePlot, occupationIncomePlot, relationsh
 m <- glm(income ~ age + education.num + hours.per.week + workclass + marital.status + occupation + relationship + race + sex, family=binomial("logit"), data=train)
 sum <- summary(m)$coefficients
 sort <- order(sum[,4])
-sum <- sum[sort,]
-sum
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Model Validation
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Cross validation
-pred.probs <- predict(m, test, type="response")
-pred.income <- rep(" <=50K.", length(test$income))
-pred.income[pred.probs >= .5] <- " >50K."
-
-error.rate <- mean(pred.income != test$income)
-error.rate
-
-#Confusion Matrix
-confusion.matrix <- table(test$income, pred.income)
-print(addmargins(confusion.matrix))
-accuracy <- sum(diag(confusion.matrix)) / length(test$income)
-accuracy
+sum <- data.frame(sum[sort,])
+print(sum)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Improving the Model using LASSO
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#m <- glm(income ~ poly(age, 3) + education.num + hours.per.week + workclass + marital.status + occupation + relationship + race + sex, family=binomial("logit"), data=train)
 #Convert the data to a matrix to perform Lasso shrinkage technique
-x <- model.matrix(income~.,train) 
+x <- model.matrix(income~., train) 
 y <- ifelse(train$income==" <=50K",0,1)
 
-cv.out <- cv.glmnet(x,y,alpha=1,family="binomial",type.measure = "mse" )
+cv.out <- cv.glmnet(x,y,alpha=1,family="binomial", type.measure = "mse")
 
 plot(cv.out)
 
-lambdaMin <- cv.out$lambda.min
-
 lambda1se <- cv.out$lambda.1se
 
-coef(cv.out,s=lambda1se)
- 
+coefTemp <- (coef(cv.out,s=lambda1se))
+oddsTemp <- exp(coef(cv.out,s=lambda1se))[which(exp(coef(cv.out,s=lambda1se)) != 1)]
+
+df <- data.frame(Feature = coefTemp@Dimnames[[1]][coefTemp@i + 1], Coefficients = coefTemp@x, OddsRatio= oddsTemp)
+
+oddsDF <- data.frame(as.matrix(exp(coef(cv.out,s=lambda1se))))
+mask <- rownames(oddsDF)[-(rownames(coefDF) == '(Intercept)')]
+df$OddsRatios <- oddsDF[mask, ]
+print(df)
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Model Validation
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,20 +131,11 @@ lasso.income <- rep(" <=50K.", length(test$income))
 lasso.income[lasso.probs >= .5] <- " >50K."
 
 error.rate <- mean(lasso.income != test$income)
-error.rate
+print(error.rate)
 
 #Confusion Matrix
 confusion.matrix <- table(test$income, lasso.income)
 print(addmargins(confusion.matrix))
 accuracy <- sum(diag(confusion.matrix)) / length(test$income)
-accuracy
+print(accuracy)
 
-#Leave one out cross validation
-total <- rbind(train, test)
-
-mycost <- function(r, pi = 0) {
-  mean(abs(r-pi) > 0.5)
-}
-
-loocv.error <- cv.glm(total, m, K=nrow(total))
-loocv.error$delta
