@@ -51,12 +51,24 @@ hoursPlot <- ggplot(train, aes(x=hours.per.week)) + geom_histogram(aes(y=..count
 
 grid.arrange(agePlot, wgtPlot, educationNumPlot, capGainPlot, capLossPlot, hoursPlot, ncol=2) 
 
+ggsave("age.png", plot=agePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("fnlwgt.png", plot=wgtPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("education_num.png", plot=educationNumPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("cap_gain.png", plot=capGainPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("cap_loss.png", plot=capLossPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("hours.png", plot=hoursPlot, width=12, height=6, dpi=320, units = "in")
+
 
 #Box plots of >50k <50k for continuous variables
 ageIncomePlot <- ggplot(train, aes(x=income, y=age)) + geom_boxplot(color="darkblue", fill="lightblue")
 wgtIncomePlot <- ggplot(train, aes(x=income, y=fnlwgt)) + geom_boxplot(color="darkblue", fill="lightblue")
 educationNumIncomePlot <- ggplot(train, aes(x=income, y=education.num)) + geom_boxplot(color="darkblue", fill="lightblue")
 hoursIncomePlot <- ggplot(train, aes(x=income, y=hours.per.week)) + geom_boxplot(color="darkblue", fill="lightblue")
+
+ggsave("age_rel.png", plot=ageIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("fnlwgt_rel.png", plot=wgtIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("education_num_rel.png", plot=educationNumIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("hours_rel.png", plot=hoursIncomePlot, width=12, height=6, dpi=320, units = "in")
 
 grid.arrange(ageIncomePlot, wgtIncomePlot, educationNumIncomePlot, hoursIncomePlot, ncol=2)
 
@@ -73,6 +85,15 @@ racePlot <- ggplot(train, aes(x=race)) + geom_bar(aes(y=..count../sum(..count..)
 sexPlot <- ggplot(train, aes(x=sex)) + geom_bar(aes(y=..count../sum(..count..)), color="darkblue", fill="lightblue") + ylab("percentage") + coord_flip()
 nativePlot <- ggplot(train, aes(x=native.country)) + geom_bar(aes(y=..count../sum(..count..)), color="darkblue", fill="lightblue") + ylab("percentage") + coord_flip()
 
+ggsave("work.png", plot=workPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("education.png", plot=educationPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("marital.png", plot=maritalPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("occupation.png", plot=occupationPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("relationship.png", plot=relationshipPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("race.png", plot=racePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("sex.png", plot=sexPlot, width=12, height=6, dpi=320, units = "in")
+ggsave("native.png", plot=nativePlot, width=12, height=6, dpi=320, units = "in")
+
 grid.arrange(workPlot, educationPlot, maritalPlot, occupationPlot, relationshipPlot, racePlot, sexPlot, nativePlot, ncol=2)
 
 #Stacked bar graph plots of >50k <50k for discrete variables
@@ -82,6 +103,13 @@ occupationIncomePlot<- ggplot(train, aes(x=occupation, y=..count../sum(..count..
 relationshipIncomePlot<- ggplot(train, aes(x=relationship, y=..count../sum(..count..), fill=workclass))+ geom_bar(aes(fill=income)) + scale_fill_manual(values=c("darkblue", "lightblue")) + ylab("percentage") + coord_flip()
 raceIncomePlot <- ggplot(train, aes(x=race, y=..count../sum(..count..), fill=workclass))+ geom_bar(aes(fill=income)) + scale_fill_manual(values=c("darkblue", "lightblue")) + ylab("percentage") + coord_flip()
 sexIncomePlot <- ggplot(train, aes(x=sex, y=..count../sum(..count..), fill=workclass))+ geom_bar(aes(fill=income)) + scale_fill_manual(values=c("darkblue", "lightblue")) + ylab("percentage") + coord_flip()
+
+ggsave("work_rel.png", plot=workIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("marital_rel.png", plot=maritalIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("occupation_rel.png", plot=occupationIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("relationship_rel.png", plot=relationshipIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("race_rel.png", plot=raceIncomePlot, width=12, height=6, dpi=320, units = "in")
+ggsave("sex_rel.png", plot=sexIncomePlot, width=12, height=6, dpi=320, units = "in")
 
 grid.arrange(workIncomePlot, maritalIncomePlot, occupationIncomePlot, relationshipIncomePlot, raceIncomePlot, sexIncomePlot, ncol=2)
 
@@ -106,6 +134,8 @@ cv.out <- cv.glmnet(x,y,alpha=1,family="binomial", type.measure = "mse")
 plot(cv.out)
 
 lambda1se <- cv.out$lambda.1se
+
+plot(lambda1se)
 
 coefTemp <- (coef(cv.out,s=lambda1se))
 oddsTemp <- exp(coef(cv.out,s=lambda1se))[which(exp(coef(cv.out,s=lambda1se)) != 1)]
@@ -139,3 +169,16 @@ print(addmargins(confusion.matrix))
 accuracy <- sum(diag(confusion.matrix)) / length(test$income)
 print(accuracy)
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Random Forest
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+library(randomForest)
+m <- randomForest(income ~ age + education.num + hours.per.week + workclass + marital.status + occupation + relationship + race + sex, data=train)
+
+rf.pred <- predict(m, test, type="response")
+
+#Confusion Matrix
+confusion.matrix <- table(test$income, rf.pred)
+print(addmargins(confusion.matrix))
+accuracy <- sum(diag(confusion.matrix)) / length(test$income)
+print(accuracy)
